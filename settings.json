@@ -1,8 +1,0 @@
-{
-    "remote_host_name" : "ci.kplabs.pl",
-    "remote_host_port" : "80",
-    "job_name"         : "HyperNet_GPU-Research",
-    "credentials_id"   : "gitlab_hypernet",
-    "url"              : "git@git.kplabs.pl:hypernet/software.git",
-    "artifacts"        : ""
-}
