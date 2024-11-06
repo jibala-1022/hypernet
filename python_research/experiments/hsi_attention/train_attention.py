@@ -11,15 +11,13 @@ from sklearn.covariance import EllipticEnvelope
 from tqdm import tqdm
 
 from python_research.experiments.hsi_attention.arguments import arguments, Arguments
-from python_research.experiments.hsi_attention.datasets.generate_datasets import get_loader_function, \
-    produce_splits
+from python_research.experiments.hsi_attention.datasets.generate_datasets import get_loader_function, produce_splits
 from python_research.experiments.hsi_attention.models.model_2 import Model2
 from python_research.experiments.hsi_attention.models.model_3 import Model3
 from python_research.experiments.hsi_attention.models.model_4 import Model4
 
 
-def train_network(x_train: np.ndarray, y_train: np.ndarray, x_val: np.ndarray, y_val: np.ndarray, model,
-                  args: Arguments):
+def train_network(x_train: np.ndarray, y_train: np.ndarray, x_val: np.ndarray, y_val: np.ndarray, model, args: Arguments):
     """
     Train and validate model.
 
@@ -53,16 +51,15 @@ def train_network(x_train: np.ndarray, y_train: np.ndarray, x_val: np.ndarray, y
         y_train_list = [y_train[i:i + args.batch_size] for i in range(0, len(y_train), args.batch_size)]
 
         for x, y in tqdm(zip(x_train_list, y_train_list), total=len(x_train_list)):
-            x = torch.from_numpy(x.astype("float32")).unsqueeze(1).type(torch.cuda.FloatTensor)
-            y = torch.from_numpy(y.astype("float32")).type(torch.cuda.FloatTensor)
+            x = torch.from_numpy(x).float().unsqueeze(1)
+            y = torch.from_numpy(y).float()
             model.zero_grad()
             model.optimizer.zero_grad()
             out = model(x, y, infer=False)
             loss = model.loss(out, y)
-            losses.append(loss.clone().detach().cpu().numpy())
-            accuracy = (torch.argmax(out, dim=1) == torch.argmax(y, dim=1)).sum().type(torch.cuda.DoubleTensor) / \
-                       y.shape[0]
-            training_accuracies.append(accuracy.cpu().numpy())
+            losses.append(loss.clone().detach().numpy())
+            accuracy = (torch.argmax(out, dim=1) == torch.argmax(y, dim=1)).sum() / y.shape[0]
+            training_accuracies.append(accuracy.numpy())
             loss.backward()
             model.optimizer.step()
 
@@ -82,11 +79,10 @@ def train_network(x_train: np.ndarray, y_train: np.ndarray, x_val: np.ndarray, y
         y_val_list = [y_val[i:i + args.batch_size] for i in range(0, len(y_val), args.batch_size)]
 
         for x, y in tqdm(zip(x_val_list, y_val_list), total=len(x_val_list)):
-            x = torch.from_numpy(x.astype("float32")).unsqueeze(1).type(torch.cuda.FloatTensor)
-            y = torch.from_numpy(y.astype("int32")).type(torch.cuda.LongTensor)
-            accuracy = (torch.argmax(model(x, y, infer=False), dim=1) == torch.argmax(y, dim=1)).sum().type(
-                torch.cuda.DoubleTensor) / y.shape[0]
-            validation_accuracies.append(accuracy.cpu().numpy())
+            x = torch.from_numpy(x).float().unsqueeze(1)
+            y = torch.from_numpy(y).float()
+            accuracy = (torch.argmax(model(x, y, infer=False), dim=1) == torch.argmax(y, dim=1)).sum() / y.shape[0]
+            validation_accuracies.append(accuracy.numpy())
 
         validation_time.append(time.time() - begin)
         loss_history.append(np.mean(losses))
@@ -140,11 +136,10 @@ def infer_network(x_test: np.ndarray, y_test: np.ndarray, args: Arguments, input
     y_test_list = [y_test[i:i + args.batch_size] for i in range(0, len(y_test), args.batch_size)]
 
     for x, y in tqdm(zip(x_test_list, y_test_list), total=len(x_test_list)):
-        x = torch.from_numpy(x.astype("float32")).unsqueeze(1).type(torch.cuda.FloatTensor)
-        y = torch.from_numpy(y.astype("int32")).type(torch.cuda.LongTensor)
-        accuracy = (torch.argmax(model(x, y, infer=True), dim=1) == torch.argmax(y, dim=1)).sum().type(
-            torch.cuda.DoubleTensor) / y.shape[0]
-        testing_accuracies.append(accuracy.cpu().numpy())
+        x = torch.from_numpy(x).float().unsqueeze(1)
+        y = torch.from_numpy(y).float()
+        accuracy = (torch.argmax(model(x, y, infer=True), dim=1) == torch.argmax(y, dim=1)).sum() / y.shape[0]
+        testing_accuracies.append(accuracy.numpy())
 
     testing_time = time.time() - begin
     testing_accuracy = [np.mean(testing_accuracies)]
@@ -189,15 +184,11 @@ def run(args: Arguments, selected_bands: np.ndarray = None):
     :param selected_bands: Bands selected by the outlier detection algorithm.
     :return: None.
     """
-    device = torch.device("cpu")
-    if torch.cuda.is_available():
-        device = torch.device("cuda:0")
-        torch.set_default_tensor_type("torch.cuda.FloatTensor")
     os.makedirs(args.output_dir, exist_ok=True)
     print("Training model for dataset: {}".format(os.path.basename(os.path.normpath(args.dataset_path))))
     samples, labels = get_loader_function(data_path=args.dataset_path, ref_map_path=args.labels_path)
     if args.selected_bands is not None:
-        selected_bands = np.loadtxt(fname=args.selected_bands).astype(int)
+        selected_bands = np.loadtxt(fname=args.selected_bands, dtype=int)
     if selected_bands is not None:
         samples = samples[..., selected_bands]
         print("Selected bands: {}".format(selected_bands))
@@ -214,7 +205,7 @@ def run(args: Arguments, selected_bands: np.ndarray = None):
     except argparse.ArgumentError as e:
         print(e)
         sys.exit("Incorrect arguments specification.")
-    model.to(device)
+    model
     train_network(x_train=x_train, y_train=y_train, x_val=x_val, y_val=y_val, model=model, args=args)
     infer_network(x_test=x_test, y_test=y_test, args=args, input_size=x_train.shape[-1])
 
@@ -259,9 +250,9 @@ def eval_heatmaps(args: Arguments) -> np.ndarray:
     print("Selected bands: {0}".format(selected_bands))
     np.savetxt(os.path.join(args.output_dir,
                             args.run_idx + "_selected_bands"),
-               selected_bands,
-               delimiter="\n",
-               fmt="%d")
+                            selected_bands,
+                            delimiter="\n",
+                            fmt="%d")
     return selected_bands
 
 

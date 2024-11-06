@@ -92,8 +92,7 @@ class AttentionBlock(torch.nn.Module):
 
         :param z: Input tensor.
         :param y: Labels.
-        :param infer: Boolean variable indicating whether to save attention heatmap which is later used in the
-                      band selection process.
+        :param infer: Boolean variable indicating whether to save attention heatmap which is later used in the band selection process.
         :return: Weighted attention module hypothesis.
         """
         heatmap = self._softmax_block_1(z)

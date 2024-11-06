@@ -2,13 +2,6 @@ numpy
 scipy
 matplotlib
 tqdm
-spectral
 scikit-learn
 scikit-image
-ipyleaflet
-imageio
 torch
-torchvision
-keras
-tensorflow
-tensorboardX

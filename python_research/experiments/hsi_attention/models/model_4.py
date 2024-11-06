@@ -41,8 +41,7 @@ class Model4(torch.nn.Module):
 
         :param x: Input tensor.
         :param y: Labels.
-        :param infer: Boolean variable indicating whether to save attention heatmap which is later used in the
-                      band selection process.
+        :param infer: Boolean variable indicating whether to save attention heatmap which is later used in the band selection process.
         :return: Weighted classifier hypothesis.
         """
         global first_module_prediction, second_module_prediction, \
